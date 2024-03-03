@@ -1,6 +1,8 @@
 const express = require('express')
 const app = express()
 
+app.use(express.json())
+
 let phonebook = [
     { 
       "id": 1,
@@ -24,14 +26,64 @@ let phonebook = [
     }
 ]
 
-app.get('/api/persons', (require, response) => {
+app.get('/api/persons', (request, response) => {
     response.json(phonebook)
 })
 
-app.get('/info', (require, response) => {
+app.get('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    const phone = phonebook.find(person => person.id === id)
+    if (phone) {
+        response.json(phone)
+    }
+    else {
+        response.status(404).end()
+    }
+})
+
+app.get('/info', (request, response) => {
     var currentTime = new Date();
     response.send(`<p>Phonebook has info for ${phonebook.length} people</p>
     <p>${currentTime}</>`)
+})
+
+app.post('/api/persons', (request, response) => {
+    const body = request.body
+    // Reject the request if the name or number is missing
+    if (!body.name) {
+        response.status(404).json({
+            error: "name missing"
+        })
+    }
+
+    // Reject the request if the name is already exists in the phonebook
+    if (phonebook.find(person=> person.name === body.name)) {
+        response.status(404).json({
+            error: 'name must be unique'
+        })
+    }
+
+    // use a random big value as id to avoid creating duplicate ids
+    const newPerson = {
+        id: Math.round(Math.random() * 1000000),
+        name: body.name,
+        number: body.number
+    }
+    phonebook = phonebook.concat(newPerson)
+    response.json(phonebook)
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    const phone = phonebook.find(person => person.id === id)
+    if (phone) {
+        phonebook = phonebook.filter(person => person.id !== id)
+        response.json(phonebook)
+        response.status(204).end()
+    }
+    else {
+        response.status(404).end()
+    }
 })
 
 PORT = 3001
